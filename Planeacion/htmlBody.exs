@@ -17,7 +17,7 @@ defp build_html_content(FormatText) do
       </style>
     </head>
     <body>
-      <pre>#{FormatText}</pre>
+      <pre><code>#{FormatText}</code></pre>
     </body>
     </html>)
 
