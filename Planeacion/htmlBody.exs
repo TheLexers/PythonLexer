@@ -1,26 +1,17 @@
-def LexFile(file) do
-  pyPath = Path.expand(file)
-  resultFile = "PythonLexerTest.html"
-  IO.puts("Reading file: " <> pyPath)
+def lex_file(file) do
+  py_path = Path.expand(file)
+  result_file = "PythonLexerTest.html"
+  IO.puts("Reading file: #{py_path}")
 
-  case File.read(pyPath) do
+  case File.read(py_path) do
     {:ok, text} ->
-      FormatText =
-        text
-        |> String.split("\n")
-        |> Enum.map(&find_token/1)
-        |> Enum.join("\n")
-
-      htmlFill = htmlStruct(FormatText)
-      File.write(resultFile, htmlFill)
+      format_text = Enum.join(Enum.map(String.split(text, "\n"), &find_token/1), "\n")
+      html_fill = html_struct(format_text)
+      File.write(result_file, html_fill)
     {:error, reason} ->
       IO.puts("Failed to read file. Reason: #{inspect(reason)}")
   end
 end
-
-
-
-
 
 defp htmlStruct(FormatText) do
   html = ~s(<!DOCTYPE html>
