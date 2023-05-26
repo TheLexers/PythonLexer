@@ -1,0 +1,10 @@
+body { background-color: #0f111a; }
+.keyword { color: #c792ea; }
+.comment { color: #b6b6b6; }
+.operator { color: #ffe68f; }
+.number { color: #f78c6c; }
+.string { color: #c3e88d; }
+.bracket { color: #ffa053; }
+.delimiter {color: #89ddff;}
+.identifier {color: #82aaff;}
+.error {color: #ff5370; font-weight: bold;}
