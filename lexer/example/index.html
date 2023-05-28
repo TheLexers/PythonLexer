@@ -14,7 +14,7 @@
     <span class="identifier">print</span><span class="bracket">(</span><span class="string">"Hello World!"</span><span class="bracket">)</span>
 
 <span class="keyword">def</span> <span class="identifier">greetSomeone</span><span class="bracket">(</span><span class="identifier">name</span><span class="bracket">)</span><span class="delimiter">:</span>
-    <span class="identifier">print</span><span class="bracket">(</span><span class="string">"Hello " + name + "!"</span><span class="bracket">)</span>
+    <span class="identifier">print</span><span class="bracket">(</span><span class="string">"Hello "</span> <span class="operator">+</span> <span class="identifier">name</span> <span class="operator">+</span> <span class="string">"!"</span><span class="bracket">)</span>
 
 <span class="keyword">def</span> <span class="identifier">factorial</span><span class="bracket">(</span><span class="identifier">num</span><span class="bracket">)</span><span class="delimiter">:</span>
     <span class="comment"># Implementation using Tail Recursion btw ;)</span>
@@ -29,6 +29,7 @@
 <span class="keyword">if</span> <span class="bracket">(</span><span class="identifier">__name__</span> <span class="operator">==</span> <span class="string">"__main__"</span><span class="bracket">)</span><span class="delimiter">:</span>
     <span class="identifier">greetTheWorld</span><span class="bracket">(</span><span class="bracket">)</span>
     <span class="identifier">greetSomeone</span><span class="bracket">(</span><span class="string">"Gil"</span><span class="bracket">)</span>
-    <span class="identifier">print</span><span class="bracket">(</span><span class="string">"factorial(5) = "</span> <span class="operator">+</span> <span class="identifier">factorial</span><span class="bracket">(</span><span class="number">5</span><span class="bracket">)</span><span class="bracket">)</span></code></pre>
+    <span class="identifier">print</span><span class="bracket">(</span><span class="string">"factorial(5) = "</span> <span class="operator">+</span> <span class="identifier">str</span><span class="bracket">(</span><span class="identifier">factorial</span><span class="bracket">(</span><span class="number">5</span><span class="bracket">)</span><span class="bracket">)</span><span class="bracket">)</span>
+</code></pre>
       </body>
       </html>

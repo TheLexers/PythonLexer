@@ -1,8 +1,19 @@
 defmodule Lexer do
   @moduledoc """
-  Documentation for `Lexer`.
+  Functons to highlight the syntax of Python code
+  
+  Juan Pablo Ruiz de Chávez Diez de Urdanivia
+  Joaquín Badillo Granillo
   """
 
+  
+  @doc """
+  Given the name of a file and the name of a directory
+  It will highlight the file like Python code creating
+  a HTML and a CSS file on the directory.
+
+  The directory will be created where the file is located.
+  """
   def highlight(fileIn, dir) do
     py_path = Path.expand(fileIn)
     result_file = ~s(#{Path.dirname(fileIn)}/#{dir}/)
@@ -40,9 +51,10 @@ defmodule Lexer do
   defp find_token(line) do
     spaces = ~r<^(\s+)>
     keywords = ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|pass|raise|return|try|while|with|yield)>
-    strings = ~r<^(".*"|'.*')>
+    strings = ~r<^("[^"]*"|'[^']*')>
     comments = ~r<^(#.*)>
     numbers = ~r<^([+-]?\d+(\.\d+)?(e[+-]?\d+)?)>
+    bools = ~r<^(True|False)[^a-zA-Z0-9_]?>
     operators = ~r[^(\*\*?=?|<<?=?|>>?=?|\^=?|\|=?|&=?|%=?|\/?\/=?|-=?|\+=?|==?|!=?|~|and|or|is( not)?|(not )?in|not)]
     delimiters = ~r<^(\.|\:|,|;|`)>
     brackets= ~r<^(\(|\)|\{|\}|\[|\])>
@@ -87,7 +99,12 @@ defmodule Lexer do
       brackets
       |> Regex.run(line) -> 
         {:ok, Regex.split(brackets, line, trim: true, include_captures: true), :bracket}
-
+      
+      # Check Booleans
+      bools
+      |> Regex.run(line) ->
+        {:ok, Regex.split(bools, line, trim: true, include_captures: true), :bool}
+      
       # Check Identifiers
       ids
       |> Regex.run(line) -> 
@@ -115,16 +132,18 @@ defmodule Lexer do
     
     defp write_css(file) do
       data = 
-        ["body { background-color: #0f111a; }",
+        ["body { background-color: #0f111a;}",
          ".keyword { color: #c792ea; }",
         ".comment { color: #b6b6b6; }",
         ".operator { color: #ffe68f; }",
         ".number { color: #f78c6c; }",
+        ".bool { color: #bdded4; }",
         ".string { color: #c3e88d; }",
         ".bracket { color: #ffa053; }",
-        ".delimiter {color: #89ddff;}",
-        ".identifier {color: #82aaff;}",
-        ".error {color: #ff5370; font-weight: bold;}"]
+        ".delimiter {color: #89ddff; }",
+        ".identifier {color: #82aaff; }",
+        ".error {color: #ff5370; font-weight: bold;}",
+        ".invalid {color: #ffd5c4; }"]
         |> Enum.join("\n")
 
       File.write(file, data)
