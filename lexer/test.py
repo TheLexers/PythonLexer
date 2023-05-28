@@ -19,4 +19,4 @@ def factorial(num):
 if (__name__ == "__main__"):
     greetTheWorld()
     greetSomeone("Gil")
-    print("factorial(5) = " + factorial(5))
+    print("factorial(5) = " + str(factorial(5)))
