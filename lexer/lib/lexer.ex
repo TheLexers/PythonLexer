@@ -50,14 +50,15 @@ defmodule Lexer do
 
   defp find_token(line) do
     spaces = ~r<^(\s+)>
-    keywords = ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|pass|raise|return|try|while|with|yield)>
+    keywords = ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|try|while|with|yield)\b>
     strings = ~r<^("[^"]*"|'[^']*')>
     comments = ~r<^(#.*)>
     numbers = ~r<^([+-]?\d+(\.\d+)?(e[+-]?\d+)?)>
-    bools = ~r<^(True|False)[^a-zA-Z0-9_]?>
-    operators = ~r[^(\*\*?=?|<<?=?|>>?=?|\^=?|\|=?|&=?|%=?|\/?\/=?|-=?|\+=?|==?|!=?|~|and|or|is( not)?|(not )?in|not)]
-    delimiters = ~r<^(\.|\:|,|;|`)>
-    brackets= ~r<^(\(|\)|\{|\}|\[|\])>
+    bools = ~r<^(True|False)\b>
+    dtypes = ~r<^(str|int|float|complex|list|tuple|range|dict|set|frozenset|bool|bytes|bytearray|memoryview|NoneType)\b>
+    operators = ~r[^(\*\*?=?|<<?=?|>>?=?|\^=?|\|=?|&=?|%=?|\/?\/=?|-=?|\+=?|==?|!=?|~|(and|or|is( not)?|(not )?in|not)\b)]
+    delimiters = ~r<^[.:,;`\\]>
+    brackets= ~r<^[()\[\]{}]>
     ids = ~r<^([a-zA-Z_]\w*)>
     cond do
       # Check Spaces and Identation
@@ -105,6 +106,11 @@ defmodule Lexer do
       |> Regex.run(line) ->
         {:ok, Regex.split(bools, line, trim: true, include_captures: true), :bool}
       
+      # Check Built-In Data Types (Classes)
+      dtypes
+      |> Regex.run(line) -> 
+        {:ok, Regex.split(dtypes, line, trim: true, include_captures: true), :dtype}
+      
       # Check Identifiers
       ids
       |> Regex.run(line) -> 
@@ -132,12 +138,13 @@ defmodule Lexer do
     
     defp write_css(file) do
       data = 
-        ["body { background-color: #0f111a;}",
+        ["body { background-color: #0f111a; font-size: 1.2rem; padding 2rem; }",
          ".keyword { color: #c792ea; }",
         ".comment { color: #b6b6b6; }",
         ".operator { color: #ffe68f; }",
         ".number { color: #f78c6c; }",
         ".bool { color: #bdded4; }",
+        ".dtype { color: #fce1f7; }",
         ".string { color: #c3e88d; }",
         ".bracket { color: #ffa053; }",
         ".delimiter {color: #89ddff; }",
