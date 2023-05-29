@@ -2,18 +2,23 @@ defmodule Lexer do
   @moduledoc """
   Functons to highlight the syntax of Python code
   
+  ## Authors
   Juan Pablo Ruiz de Chávez Diez de Urdanivia
+  
   Joaquín Badillo Granillo
   """
 
-  
+  @type fileIn() :: String.t()
+  @type dir() :: String.t()
+
   @doc """
-  Given the name of a file and the name of a directory
-  It will highlight the file like Python code creating
-  a HTML and a CSS file on the directory.
+  Creates a HTML and CSS file inside the directory `dir`
+  that highlights the contents of the input file
+  `fileIn` using the syntax of Python code.
 
   The directory will be created where the file is located.
   """
+  @spec highlight(fileIn(), dir()) :: :ok | :error
   def highlight(fileIn, dir) do
     py_path = Path.expand(fileIn)
     result_file = ~s(#{Path.dirname(fileIn)}/#{dir}/)
@@ -25,7 +30,7 @@ defmodule Lexer do
         write_css(result_file <> "style.css")
         data = text
           |> String.split("\n")
-          |> Enum.map(&highlight_line/1)
+          |> Enum.map(&highlight_line(&1, []))
           |> Enum.join("\n")
           |> html_struct()
         File.write(result_file <> "index.html", data)
@@ -35,16 +40,14 @@ defmodule Lexer do
     end
   end
 
-  def highlight_line(line), do: do_highlight_line(line, [])
+  defp highlight_line("", formatted), do: formatted |> Enum.reverse |> Enum.join("")
 
-  defp do_highlight_line("", formatted), do: formatted |> Enum.reverse |> Enum.join("")
-
-  defp do_highlight_line(line, formatted) do
+  defp highlight_line(line, formatted) do
     case find_token(line) do
-      {:ok, [content | [rest | _list]], :space} -> do_highlight_line(rest, [content | formatted])
-      {:ok, [content | [rest | _list]], type} -> do_highlight_line(rest, ["<span class=\"#{type}\">#{content}</span>" | formatted])
-      {:ok, [content | _rest], type} -> do_highlight_line("", ["<span class=\"#{type}\">#{content}</span>" | formatted])
-      {:error, line} -> do_highlight_line("", ["<span class=\"invalid\">#{line}</span> <span class=\"error\">Invalid syntax</span>" | formatted])
+      {:ok, [content | [rest | _list]], :space} -> highlight_line(rest, [content | formatted])
+      {:ok, [content | [rest | _list]], type} -> highlight_line(rest, ["<span class=\"#{type}\">#{content}</span>" | formatted])
+      {:ok, [content | _rest], type} -> highlight_line("", ["<span class=\"#{type}\">#{content}</span>" | formatted])
+      {:error, line} -> highlight_line("", ["<span class=\"invalid\">#{line}</span> <span class=\"error\">Invalid syntax</span>" | formatted])
     end
   end
 
@@ -140,17 +143,17 @@ defmodule Lexer do
       data = 
         ["body { background-color: #0f111a; font-size: 1.2rem; padding 2rem; }",
          ".keyword { color: #c792ea; }",
-        ".comment { color: #b6b6b6; }",
-        ".operator { color: #ffe68f; }",
-        ".number { color: #f78c6c; }",
-        ".bool { color: #bdded4; }",
-        ".dtype { color: #fce1f7; }",
-        ".string { color: #c3e88d; }",
-        ".bracket { color: #ffa053; }",
-        ".delimiter {color: #89ddff; }",
-        ".identifier {color: #82aaff; }",
-        ".error {color: #ff5370; font-weight: bold;}",
-        ".invalid {color: #ffd5c4; }"]
+         ".comment { color: #b6b6b6; }",
+         ".operator { color: #ffe68f; }",
+         ".number { color: #f78c6c; }",
+         ".bool { color: #bdded4; }",
+         ".dtype { color: #fce1f7; }",
+         ".string { color: #c3e88d; }",
+         ".bracket { color: #ffa053; }",
+         ".delimiter {color: #89ddff; }",
+         ".identifier {color: #82aaff; }",
+         ".error {color: #ff5370; font-weight: bold;}",
+         ".invalid {color: #ffd5c4; }"]
         |> Enum.join("\n")
 
       File.write(file, data)
