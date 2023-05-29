@@ -1,4 +1,4 @@
-# Test File
+# Test 1: Functions, strings and numbers
 
 def greetTheWorld():
     print("Hello World!")

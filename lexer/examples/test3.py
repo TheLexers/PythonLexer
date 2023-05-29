@@ -1,4 +1,4 @@
-# Using reserved words in ids
+# Test 3: Using reserved words in identifiers
 
 # Using break-
 def breakingLexer():
