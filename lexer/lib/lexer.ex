@@ -22,12 +22,17 @@ defmodule Lexer do
   def highlight(fileIn, dir) do
     py_path = Path.expand(fileIn)
     result_file = ~s(#{Path.dirname(fileIn)}/#{dir}/)
+    
     IO.puts("Reading file: #{py_path}")
-  
     case File.read(py_path) do
       {:ok, text} ->
-        File.mkdir_p!(dir)
+        IO.puts(~s<Creating Directory #{dir}>)
+        File.mkdir_p!(~s(#{Path.dirname(fileIn)}/#{dir}/))
+
+        IO.puts(~s<Writing CSS file in #{dir}>)
         write_css(result_file <> "style.css")
+
+        IO.puts(~s<Writing HTML file in #{dir}>)
         data = text
           |> String.split("\n")
           |> Enum.map(&highlight_line(&1, []))
