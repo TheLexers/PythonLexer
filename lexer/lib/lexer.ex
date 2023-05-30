@@ -44,8 +44,6 @@ defmodule Lexer do
     end
   end
 
-  #defp highlight_line("", formatted), do: formatted |> Enum.reverse |> Enum.join("")
-
   defp highlight_line(line, fileIn) do
     case find_token(line) do
       {:ok, [content | [rest | _list]], type} -> 
@@ -55,7 +53,7 @@ defmodule Lexer do
         File.write(fileIn, ~s(<span class="#{type}">#{content}</span>), [:append])
 
       {:error, line} -> 
-        File.write(fileIn, ~s(<span class="invalid">#{line}</span> <span class="error">Invalid syntax</span>\n), [:append])
+        File.write(fileIn, ~s(<span class="error">Invalid syntax</span> &gt; <span class="invalid">#{line}</span>), [:append])
     end
   end
 
@@ -72,7 +70,7 @@ defmodule Lexer do
     keywords = ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|try|while|with|yield)\b>
     strings = ~r<^("[^"]*"|'[^']*')>
     comments = ~r<^(#.*)>
-    numbers = ~r<^([+-]?\d+(\.\d+)?(e[+-]?\d+)?)>
+    numbers = ~r<^([+-]?\d+(\.\d+)?(e[+-]?\d+)?([+-]\d+(\.\d+)?(e[+-]?\d+)?j)?)>
     bools = ~r<^(True|False)\b>
     dtypes = ~r<^(str|int|float|complex|list|tuple|range|dict|set|frozenset|bool|bytes|bytearray|memoryview|NoneType)\b>
     operators = ~r[^(\*\*?=?|<<?=?|>>?=?|\^=?|\|=?|&=?|%=?|\/?\/=?|-=?|\+=?|==?|!=?|~|(and|or|is( not)?|(not )?in|not)\b)]
@@ -160,7 +158,7 @@ defmodule Lexer do
   defp write_css(fileIn) do
     File.write(fileIn,"/* CSS file for syntax highlighting */\n")
 
-    ["body { background-color: #0f111a; font-size: 1.2rem; padding: 0 1.5rem; }",
+    ["body { background-color: #0f111a; font-size: 1.2rem; padding: 0 1.5rem; color: #e0e0e0}",
       ".keyword { color: #c792ea; }",
       ".comment { color: #b6b6b6; }",
       ".operator { color: #ffe68f; }",
