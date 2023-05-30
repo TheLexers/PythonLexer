@@ -21,39 +21,50 @@ defmodule Lexer do
   @spec highlight(fileIn(), dir()) :: :ok | :error
   def highlight(fileIn, dir) do
     py_path = Path.expand(fileIn)
-    result_file = ~s(#{Path.dirname(fileIn)}/#{dir}/)
-    
-    IO.puts("Reading file: #{py_path}")
-    case File.read(py_path) do
-      {:ok, text} ->
-        IO.puts(~s<Creating Directory #{dir}>)
-        File.mkdir_p!(~s(#{Path.dirname(fileIn)}/#{dir}/))
+    css_file = ~s(#{Path.dirname(fileIn)}/#{dir}/style.css)
+    html_file = ~s(#{Path.dirname(fileIn)}/#{dir}/index.html)
+  
+    try do
+      IO.puts(~s<Creating Directory #{dir}>)
+      File.mkdir_p!(~s(#{Path.dirname(fileIn)}/#{dir}/))
 
-        IO.puts(~s<Writing CSS file in #{dir}>)
-        write_css(result_file <> "style.css")
+      IO.puts(~s<Writing CSS file in #{dir}>)
+      write_css(css_file)
 
-        IO.puts(~s<Writing HTML file in #{dir}>)
-        data = text
-          |> String.split("\n")
-          |> Enum.map(&highlight_line(&1, []))
-          |> Enum.join("\n")
-          |> html_struct()
-        File.write(result_file <> "index.html", data)
+      IO.puts(~s<Writing HTML file in #{dir}...>)
+      html_start(html_file)
 
-      {:error, reason} ->
-        IO.puts("Failed to read file. Reason: #{inspect(reason)}")
+      File.stream!(py_path)
+      |> Enum.each(&highlight_line(&1, html_file))
+
+      File.write(html_file, "</code></pre>\n\t</body>\n</html>", [:append])
+    rescue
+      exception ->
+        IO.puts("Failed to create file. Reason: #{inspect(exception)}")
     end
   end
 
-  defp highlight_line("", formatted), do: formatted |> Enum.reverse |> Enum.join("")
+  #defp highlight_line("", formatted), do: formatted |> Enum.reverse |> Enum.join("")
 
-  defp highlight_line(line, formatted) do
+  defp highlight_line(line, fileIn) do
     case find_token(line) do
-      {:ok, [content | [rest | _list]], :space} -> highlight_line(rest, [content | formatted])
-      {:ok, [content | [rest | _list]], type} -> highlight_line(rest, ["<span class=\"#{type}\">#{content}</span>" | formatted])
-      {:ok, [content | _rest], type} -> highlight_line("", ["<span class=\"#{type}\">#{content}</span>" | formatted])
-      {:error, line} -> highlight_line("", ["<span class=\"invalid\">#{line}</span> <span class=\"error\">Invalid syntax</span>" | formatted])
+      {:ok, [content | [rest | _list]], type} -> 
+        recursive_write(fileIn, content, type, rest)
+
+      {:ok, [content | _rest], type} ->
+        File.write(fileIn, ~s(<span class="#{type}">#{content}</span>), [:append])
+
+      {:error, line} -> 
+        File.write(fileIn, ~s(<span class="invalid">#{line}</span> <span class="error">Invalid syntax</span>\n), [:append])
     end
+  end
+
+  defp recursive_write(fileIn, content, type, rest) do
+    if type == :space,
+      do: File.write(fileIn, content, [:append]),
+      else: File.write(fileIn, ~s(<span class="#{type}">#{content}</span>), [:append])
+
+    highlight_line(rest, fileIn)
   end
 
   defp find_token(line) do
@@ -129,38 +140,39 @@ defmodule Lexer do
     end
   end
   
-  defp html_struct(formatText), do:
-    ~s(<!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Syntax Highlighter</title>
-        <link rel="stylesheet" href="./style.css">
-      </head>
-      <body>
-        <pre><code>#{formatText}</code></pre>
-      </body>
-      </html>)
-    
-    defp write_css(file) do
-      data = 
-        ["body { background-color: #0f111a; font-size: 1.2rem; padding 2rem; }",
-         ".keyword { color: #c792ea; }",
-         ".comment { color: #b6b6b6; }",
-         ".operator { color: #ffe68f; }",
-         ".number { color: #f78c6c; }",
-         ".bool { color: #bdded4; }",
-         ".dtype { color: #fce1f7; }",
-         ".string { color: #c3e88d; }",
-         ".bracket { color: #ffa053; }",
-         ".delimiter {color: #89ddff; }",
-         ".identifier {color: #82aaff; }",
-         ".error {color: #ff5370; font-weight: bold;}",
-         ".invalid {color: #ffd5c4; }"]
-        |> Enum.join("\n")
+  defp html_start(fileIn) do
+    File.write(fileIn,"<!--  Index file with highlighted text -->\n")
 
-      File.write(file, data)
-    end
+    ["<!DOCTYPE html>\n",
+     "<html lang=\"en\">\n",
+     "\t<head>\n",
+     "\t\t<meta charset=\"UTF-8\">\n",
+     "\t\t<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n",
+     "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n",
+     "\t\t<title>Syntax Highlighter</title>\n",
+     "\t\t<link rel=\"stylesheet\" href=\"./style.css\">\n",
+     "\t</head>\n",
+     "\t<body>\n",
+     "\t\t<pre><code>"]
+     |> Enum.each(&File.write(fileIn, &1, [:append]))
+  end
+    
+  defp write_css(fileIn) do
+    File.write(fileIn,"/* CSS file for syntax highlighting */\n")
+
+    ["body { background-color: #0f111a; font-size: 1.2rem; padding: 0 1.5rem; }",
+      ".keyword { color: #c792ea; }",
+      ".comment { color: #b6b6b6; }",
+      ".operator { color: #ffe68f; }",
+      ".number { color: #f78c6c; }",
+      ".bool { color: #bdded4; }",
+      ".dtype { color: #fce1f7; }",
+      ".string { color: #c3e88d; }",
+      ".bracket { color: #ffa053; }",
+      ".delimiter {color: #89ddff; }",
+      ".identifier {color: #82aaff; }",
+      ".error {color: #ff5370; font-weight: bold;}",
+      ".invalid {color: #ffd5c4; }"]
+      |> Enum.each(&File.write(fileIn, &1, [:append]))
+  end
 end
