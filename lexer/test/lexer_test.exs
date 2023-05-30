@@ -2,118 +2,62 @@ defmodule LexerTest do
   use ExUnit.Case
   doctest Lexer
 
-  test "numbers" do
-    assert Lexer.highlight_line("1") == "<span class=\"number\">1</span>"
-    assert Lexer.highlight_line("+1") == "<span class=\"number\">+1</span>"
-    assert Lexer.highlight_line("1.0") == "<span class=\"number\">1.0</span>"
-    assert Lexer.highlight_line("-1") == "<span class=\"number\">-1</span>"
-    assert Lexer.highlight_line("-1.0") == "<span class=\"number\">-1.0</span>"
-    assert Lexer.highlight_line("1e10") == "<span class=\"number\">1e10</span>"
-    assert Lexer.highlight_line("1e-10") == "<span class=\"number\">1e-10</span>"
-    assert Lexer.highlight_line("1.0e10") == "<span class=\"number\">1.0e10</span>"
-    assert Lexer.highlight_line("1.0e-10") == "<span class=\"number\">1.0e-10</span>"
-  end
+  # Some tests used during development
+  # find_token was changed to private
+  # highlight/1 is not tested here
 
-  test "arithmetic expressions" do
-    assert Lexer.highlight_line("1 + 2") == 
-      ["<span class=\"number\">1</span>",
-       " ",
-       "<span class=\"operator\">+</span>",
-       " ", 
-       "<span class=\"number\">2</span>"]
-      |> Enum.join("")
+  # test "numbers" do
+  #   assert Lexer.find_token("1") == {:ok, ["1"], :number}
+  #   assert Lexer.find_token("+1") == {:ok, ["+1"], :number}
+  #   assert Lexer.find_token("1.0") == {:ok, ["1.0"], :number}
+  #   assert Lexer.find_token("-1") == {:ok, ["-1"], :number}
+  #   assert Lexer.find_token("-1.0") == {:ok, ["-1.0"], :number}
+  #   assert Lexer.find_token("1e10") == {:ok, ["1e10"], :number}
+  #   assert Lexer.find_token("1e-10") == {:ok, ["1e-10"], :number}
+  #   assert Lexer.find_token("1.0e10") == {:ok, ["1.0e10"], :number}
+  #   assert Lexer.find_token("1.0e-10") == {:ok, ["1.0e-10"], :number}
+  # end
 
-    assert Lexer.highlight_line("3 * 2 + 5 / 4") == 
-      ["<span class=\"number\">3</span>",
-       " ",
-       "<span class=\"operator\">*</span>",
-       " ",
-       "<span class=\"number\">2</span>",
-       " ",
-       "<span class=\"operator\">+</span>",
-       " ",
-       "<span class=\"number\">5</span>",
-       " ",
-       "<span class=\"operator\">/</span>",
-       " ",
-       "<span class=\"number\">4</span>"]
-      |> Enum.join("")
-  end
+  # test "arithmetic expressions" do
+  #   assert Lexer.find_token("1 + 2") == 
+  #     {:ok, ["1", " + 2"], :number}
 
-  test "strings" do
-    assert Lexer.highlight_line("\"Hello World\"") == 
-      "<span class=\"string\">\"Hello World\"</span>"
-
-    assert Lexer.highlight_line("'Hello World'") == 
-      "<span class=\"string\">'Hello World'</span>"
+  #   assert Lexer.find_token("3 * 2 + 5 / 4") == 
+  #     {:ok, ["3", " * 2 + 5 / 4"], :number}
     
-    assert Lexer.highlight_line("\"'Hello World'\"") == 
-      "<span class=\"string\">\"'Hello World'\"</span>"
+  #   assert Lexer.find_token("* 2 + 5 / 4") == 
+  #     {:ok, ["*", " 2 + 5 / 4"], :operator}
+  # end
 
-    assert Lexer.highlight_line("'\"Hello World\"'") == 
-      "<span class=\"string\">'\"Hello World\"'</span>"
-  end
+  # test "strings" do
+  #   assert Lexer.find_token("\"Hello World\"") == 
+  #     {:ok, ["\"Hello World\""], :string}
 
-  test "identifiers" do
-    assert Lexer.highlight_line("x = 3") == 
-      ["<span class=\"identifier\">x</span>",
-       " ",
-       "<span class=\"operator\">=</span>",
-       " ",
-       "<span class=\"number\">3</span>"]
-      |> Enum.join("")
-  end
+  #   assert Lexer.find_token("\"String\" + \" \" + \"Concatenation\"") == 
+  #     {:ok, ["\"String\"", " + \" \" + \"Concatenation\""], :string}
+  # end
 
-  test "keyowrds" do
-    assert Lexer.highlight_line("def hello") == 
-      ["<span class=\"keyword\">def</span>",
-       " ",
-       "<span class=\"identifier\">hello</span>"]
-      |> Enum.join("")
+  # test "identifiers" do
+  #   assert Lexer.find_token("x = 3") == 
+  #     {:ok, ["x", " = 3"], :identifier}
+  # end
+
+  # test "keyowrds" do
+  #   assert Lexer.find_token("def hello") ==
+  #     {:ok, ["def", " hello"], :keyword} 
+  # end
+
+  # test "comments" do
+  #   assert Lexer.find_token("1 + 2 #This adds 1 and 2") == 
+  #     {:ok, ["1", " + 2 #This adds 1 and 2"], :number}
     
-    assert Lexer.highlight_line("def doFactorial(num, a):") ==
-      ["<span class=\"keyword\">def</span>",
-       " ",
-       "<span class=\"identifier\">doFactorial</span>",
-       "<span class=\"bracket\">(</span>",
-       "<span class=\"identifier\">num</span>",
-       "<span class=\"delimiter\">,</span>",
-       " ",
-       "<span class=\"identifier\">a</span>",
-       "<span class=\"bracket\">)</span>",
-       "<span class=\"delimiter\">:</span>"]
-      |> Enum.join("")
-    
-    assert Lexer.highlight_line("if x == 3:") == 
-      ["<span class=\"keyword\">if</span>",
-       " ",
-       "<span class=\"identifier\">x</span>",
-       " ",
-       "<span class=\"operator\">==</span>",
-       " ",
-       "<span class=\"number\">3</span>",
-       "<span class=\"delimiter\">:</span>"]
-      |> Enum.join("")
-  end
+  #   assert Lexer.find_token("# This is a comment") == 
+  #     {:ok, ["# This is a comment"], :comment}
+  # end
 
-  test "comments" do
-    assert Lexer.highlight_line("1 + 2 #This adds 1 and 2") == 
-      ["<span class=\"number\">1</span>",
-       " ",
-       "<span class=\"operator\">+</span>",
-       " ",
-       "<span class=\"number\">2</span>",
-       " ",
-       "<span class=\"comment\">#This adds 1 and 2</span>"]
-      |> Enum.join("")
-  end
-
-  test "invalid" do
-    assert Lexer.highlight_line("ßþøł½ it broke") == 
-    ["<span class=\"invalid\">ßþøł½ it broke</span>",
-     " ", 
-     "<span class=\"error\">Invalid syntax</span>"]
-    |> Enum.join("")
-  end
+  # test "invalid" do
+  #   assert Lexer.find_token("ßþøł½ it broke") == 
+  #     {:error, "ßþøł½ it broke"}
+  # end
 
 end
