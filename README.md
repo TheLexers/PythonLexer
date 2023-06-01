@@ -37,6 +37,7 @@ You can also decide to highlight the file without providing a directory, this wi
 iex> Lexer.highlight("path/to/file.py")
 ```
 Some examples of code already passed through this function can be found on the `/lexer/examples` directory.
+
 ---
 
 <!-- <style>
