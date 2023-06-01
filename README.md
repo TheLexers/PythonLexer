@@ -15,7 +15,7 @@ You will need to have Elixir installed in your computer. There are lots of [Inst
 
 For Ubuntu users I would recommend using `asdf` or `docker` to have control over multiple versions of elixir.
 
-The mix project has a single public function: `highlight/2`. Documentation for this module has been generated with docstrings and ExDoc and it can be found on the `docs` directory. Here you will also find in markdown files the tokens that we decided to highlight, some examples and information regarding the time complexity of the lexer.
+The mix project has 2 public functions: `highlight/2` and `highlight/1`. Documentation for this module has been generated with docstrings and ExDoc and it can be found on the `docs` directory. Here you will also find in markdown files the tokens that we decided to highlight, some examples and information regarding the time complexity of the lexer.
 
 If you are unfamiliar with `mix` but you want to use this project just move to the `lexer` directory and run Elixir interactively with the following command
 
@@ -23,20 +23,22 @@ If you are unfamiliar with `mix` but you want to use this project just move to t
 $ iex -S mix
 ```
 
-This command also imports the modules from the `lib` directory therefore you will have access to `Lexer.highlight/2`.
+This command also imports the modules from the `lib` directory therefore you will have access to the public functions of the `Lexer` module.
 
+To a highlight a file with a path `path/to/file.py` and get the results in the directory `dir` you can run the following command:
+```
+iex> Lexer.highlight("path/to/file.py", "dir")
+```
+The directory will be created in the same place as the file. The `dir` argument is optional and if it is not given the results will be saved in the `lexer` directory.
+
+You can also decide to highlight the file without providing a directory, this will try to create a default directory called `highlighted` in the same place as the file.
+```
+iex> Lexer.highlight("path/to/file.py")
+```
+Some examples of code already passed through this function can be found on the `/lexer/examples` directory.
 ---
-## Evidence Description
-1. Selecciona un lenguaje de programación que te resulte familiar (por ejemplo, C, C++, C#, Java, JavaScript, Python, Racket, etc.), y determina las categorías léxicas que tiene (por ejemplo, palabras reservadas, operadores, literales, comentarios, etc.)
-2. Define una descripción para cada una de las categorías léxicas (tipos de tokens) del lenguaje seleccionado. Puedes usar una máquina de estados o expresiones regulares.
-3. Usando el lenguaje funcional indicado por tu profesor implementa un lector de los elementos léxicos de cualquier archivo fuente provisto.
-4. El programa debe convertir su entrada en documentos de HTML+CSS que resalten su léxico.
-5. Utiliza las convenciones de codificación del lenguaje en el que está implementado tu programa.
-6. Reflexiona sobre la solución planteada, los algoritmos implementados y sobre el tiempo de ejecución de estos.
-7. Calcula la complejidad de tu algoritmo basada en el número de iteraciones y contrástala con el tiempo estimado en el punto anterior.
-8. Plasma en un breve reporte de una página (en formato Markdown) las conclusiones de tu reflexión en los puntos 6 y 7. Agrega además una breve reflexión sobre las implicaciones éticas que el tipo de tecnología que desarrollaste pudiera tener en la sociedad.
 
-<style>
+<!-- <style>
     .keyword { color: #c792ea; }
     .comment { color: #b6b6b6; }
     .operator { color: #ffe68f; }
@@ -49,7 +51,9 @@ This command also imports the modules from the `lib` directory therefore you wil
     .identifier {color: #82aaff; }
     .error {color: #ff5370; font-weight: bold;}
     .invalid {color: #ffd5c4; }
-</style>
+</style> 
+
+  GitHub blocks style tags -->
 
 
 # Python Lexer Tokens
@@ -70,11 +74,14 @@ painted in a different color for differentiation pourposes.
 | class     | else      | global    | pass      | with      |
 | continue  | except    | if        | raise     | yield     |
 
+Color code: #c792ea;
+
 ### <span class="string">Strings</span>
 Text inside single or double quotes:
 * "This is a string"
 * 'This is also a string'
 
+Color code: #c3e88d;
 
 ### <span class="number">Numbers</span>
 * Integers - e.g. 1, 2, 3
@@ -82,9 +89,13 @@ Text inside single or double quotes:
 * Scientific notation - e.g. 1e10, -2e5, 8.0e-2
 * Complex numbers - e.g. 1+1j, 2.0-2j, -3+4j
 
+Color code: #f78c6c;
+
 ### <span class="bool">Booleans</span>
 * True
 * False
+
+Color code: #bdded4;
 
 ### <span class="operator">Operators</span>
 
@@ -95,11 +106,15 @@ Text inside single or double quotes:
 | +=    | -=  | *= | /= | //= | %=  | >>= | <<= | **= | ^= |
 | &=    | \|= | =  |
 
+Color code: #ffe68f;
+
 ### <span class="delimiter">Delimiters</span>
 
-|    |     |    |     |     |     |
-|:--:|:---:|:--:|:---:|:---:|:---:|
-| ,  | :   | .  | `   | \\   | ;   |
+|    |     |    |     |     |     |     |
+|:--:|:---:|:--:|:---:|:---:|:---:|:---:|
+| ,  | :   | .  | `   | \\  | ;   | ->  |
+
+Color code: #89ddff;
 
 
 ### <span class="bracket">Brackets</span>
@@ -107,6 +122,8 @@ Text inside single or double quotes:
 |    |     |    |     |     |    |
 |:--:|:---:|:--:|:---:|:---:|:---:|
 | (  | )   | [  | ]   | {   | }   |
+
+Color code: #ffa053;
 
 ### <span class="dtype">Data Type</span>
 
@@ -118,14 +135,19 @@ Built-in data types by class name
 | tuple     | range     | dict      | set        | frozenset |
 | bool      | bytes     | bytearray | memoryview | NoneType  |
 
+Color code: #fce1f7;
+
 ### <span class="identifier">Identifier</span>
 
 Variables, constants and function names. These have alphanumeric and underscore characters, although these cannot start with numbers
 
+Color code: #82aaff;
 
 ### <span class="comment">Comments</span>
 
 Anything after a # sign and before a line break
+
+Color code: #b6b6b6;
 
 ---
 
@@ -160,44 +182,35 @@ Anything after a # sign and before a line break
 
 Creating a syntax highlighter is always a challenge, but it is a very interesting one. There were different solutions that we could work on in order to solve this problem. The first one was to evaluate the code by using a DFA or state machine, going trhough each character. The other possible solution which was a little bit easier but still very challenging was to analyze the code using different regular expressions. Because of its simplicity and moldability we decided tu use this alternative as our proposal to the solution of the problem.
 
- The first thing we did was to create a regular expression for each token, and then analyze each single line of the document. As the challenge was to create a syntax highlighter, it was imperative to create functions to initialize both, a CSS and a HTML document. Whithin these documents we would store the different styles in order to color the tokens and also the HTML tags to display the code in a web browser. 
+The first thing we did was to create a regular expression for each token, and then analyze each single line of the document. As the challenge was to create a syntax highlighter, it was imperative to create functions to initialize both, a CSS and a HTML document. Whithin these documents we would store the different styles in order to color the tokens and also the HTML tags to display the code in a web browser. 
 
 The next step was to analyze each line of the document. Once this final step was done, the only thing left to do was to test our code and make sure that it was optimized and working properly. This last point lead us to a very interesing questions: What is th complexity of our code? 
 
 ## Code Complexity
 
-In order to explain the complexity of our code, we will start by analyzing each fragment of the code.
+First let's find the time complexities of some helper functions that we will use in the `Lexer` module. 
 
 ```
- def highlight(fileIn, dir) do
-    py_path = Path.expand(fileIn)
-    css_file = ~s(#{Path.dirname(fileIn)}/#{dir}/style.css)
-    html_file = ~s(#{Path.dirname(fileIn)}/#{dir}/index.html)
-  
-    try do
-      IO.puts(~s<Creating Directory #{dir}>)
-      File.mkdir_p!(~s(#{Path.dirname(fileIn)}/#{dir}/))
-
-      IO.puts(~s<Writing CSS file in #{dir}>)
-      write_css(css_file)
-
-      IO.puts(~s<Writing HTML file in #{dir}...>)
-      html_start(html_file)
-
-      File.stream!(py_path)
-      |> Enum.each(&highlight_line(&1, html_file))
-
-      File.write(html_file, "</code></pre>\n\t</body>\n</html>", [:append])
-    rescue
-      exception ->
-        IO.puts("Failed to create file. Reason: #{inspect(exception)}")
+defp find_token(line) do
+    [{:space, ~r<^(\s+)>},
+     {:keyword, ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|self|try|while|with|yield)\b>},
+     {:string, ~r<^("[^"]*"|'[^']*')>},
+     {:comment, ~r<^(#.*)>},
+     {:number, ~r<^([+-]?\d+(\.\d+)?(e[+-]?\d+)?([+-]\d+(\.\d+)?(e[+-]?\d+)?j)?)>},
+     {:bool, ~r<^(True|False)\b>},
+     {:dtype, ~r<^(str|int|float|complex|list|tuple|range|dict|set|frozenset|bool|bytes|bytearray|memoryview|NoneType)\b>},
+     {:delimiter, ~r/^([.:,;`\\]|->)/ },
+     {:operator, ~r[^(\*\*?=?|<<?=?|>>?=?|\^=?|\|=?|&=?|%=?|\/?\/=?|-=?|\+=?|==?|!=?|~|(and|or|is( not)?|(not )?in|not)\b)]},
+     {:bracket, ~r<^[()\[\]{}]>},
+     {:identifier, ~r<^([a-zA-Z_]\w*)>}]
+    |> Enum.find(fn {_token, regex} -> Regex.match?(regex, line) end)
+    |> case do
+      {token, regex} -> {:ok, Regex.split(regex, line, trim: true, include_captures: true), token}
+      nil -> {:error, line}
     end
   end
 ```
-
-As we can see, the function highlight firstly initialize the variables and expand the paths. These lines have a complexity of O(1) as it is a constant time. The function File.mkdir has also a constant complexity. 
-
-The next two functions 'wirtes_css' and 'html_start' have a complexity of O(n) as they depend on the length of the document that is going to be written. However, if the document is small, the complexity can be considered as constant. Last but not least we have File.write, which also has a a constant complexity. Notice that we are not talking about highlight_line yet since it is going to be explained in the next section.
+Let $k$ be the length of the longest regular expression match. We can see here that we are trying to match the line provided with each regular expression. Since there is a constant number of regular expressions the complexity of the `Enum.find/2` procedure will be $O(k)$, moreover since we are looking for matches at the beginning of the string most of them will terminate early. Finally, if we are able to match we split the line using the regular expression, which has a complexity of $O(k)$, and return the result. If we are not able to match we return an error. Thus the overall complexity of this function is $O(k)$, since the split only occurs after we finished finding the match. We can see what's the longest match, and it is the comment expression; which has a complexity of $O(m)$, where $m$ is the length of the line. Since it has to go through all the characters in the line, thus this will be the complexity of the `find_token/1` function.
 
 ``` 
 defp highlight_line(line, fileIn) do
@@ -213,7 +226,9 @@ defp highlight_line(line, fileIn) do
     end
   end
 ```
-This whole function can be explained as O(n) as it depends on the length of the line that is being analyzed. However it can be also considered as constant if the line is small or "n" will be equal to maximum number of tokens in the line. 
+
+Now looking at the `highlight_line/2` function we can see that we call the `find_token/1` procedure on the line and try to match its results to different patters. Checking patterns takes constant time, and the `find_token/1` function has a complexity of $O(m)$, but what about the `recursive_write/4` function? Let us derive its complexity.
+
 
 ```
 defp recursive_write(fileIn, content, type, rest) do
@@ -225,15 +240,54 @@ defp recursive_write(fileIn, content, type, rest) do
   end
 
 ```
+Recursive write is a simple function that will write the content to the file if the type is a space, otherwise it will write the content with the corresponding HTML tag. However, it will also call the `highlight_line/2` function with the rest of the line. Writing to the file will be as expensive as the amount of characters to write, therefore it will have a complexity of $O(k)$ since that was the longest match. The new call to `highlight_line/2` will have a smaller list and thus the longest expression that could match will be smaller let us call this value $k_{1} < k$. This calls will continue until the line is empty, creating a decreasing sequence $\langle k, k_{1}, k_{2}, \dots, 0 \rangle$. Notice that in the worst scenario it will read the whole line, but then the function would terminate immediately with an $O(m)$ complexity. But now let us consider the case where the recursive always divides the size of the input by some value $b \leq m$, then if $T(m)$ is the complexity of the `highlight_line/2` function, we can write the following recurence relation:
+$$T(m) = T\left(\frac{m}{b}\right) + m$$
+Since it will call itself again with a smaller complexity. The $m$ that is added in the end is due to the fact that it will have a complexity of at most $m$ in each call. 
 
-As this function is called recursively and writes content to the created file it can also be judged as the last function taking into consideration that for small documents the complexity can be considered as constant but for bigger documents it will be O(n).
+But then using the Master Theorem (found in Cormen's Introduction to Algorithms), we can see that the complexity of this function will be $O(m)$, since any recurrence of the form $T(n)=aT(n/b)+f(n),$ with
+$f(n)=\Omega(n^{\log_{b}a+\epsilon})$ for some constat $\epsilon > 0$ and if $af(n/b)\leq cf(n)$ for some constant $c<1$ and all sufficiently large $n$, will have a complexity $T(n)=\Theta(f(n))$ (Theorem 4.1. Introduction to Algorithms). We know that this is the case since $a=1$ thus $n^{\log_{b}a+\epsilon} = n$ since the logarithm of any base $b > 1$ is 1 and we can simply choose $b=c$ to solve the inequality. 
 
-The next functions which are "html_start", "write_css" and "find_token" have a complexity of O(1). They are not written here since their complexity is always constant. The function "find_token" is called by "highlight_line" and "html_start" and "write_css" only create the styles and formats of the generated highlighted file.
+Finally looking at the main and public function `highlight/2`, once we derived the time complexity of the `highlight_line/2` function we can finally show that the overall time complexity is $O(nm)$, why is this the case?
 
-Overall, we can say that the complexity of the code will depend on the length of the generated file or the upcoming file to be analyzed. If the file is small, the complexity will be constant but if the file is big, the complexity will be O(n).
+```
+ def highlight(fileIn, dir) do
+    py_path = Path.expand(fileIn)
+    css_file = ~s(#{Path.dirname(fileIn)}/#{dir}/style.css)
+    html_file = ~s(#{Path.dirname(fileIn)}/#{dir}/index.html)
+  
+    try do
+      IO.puts(~s<Trying to create directory #{dir}>)
+      File.mkdir_p(~s(#{Path.dirname(fileIn)}/#{dir}/))
+      |> case do
+        :ok -> :ok
+        {:error, _reason} -> raise "Failed to create directory"
+      end
+
+      IO.puts(~s<Writing CSS file in #{dir} directory>)
+      create_css(css_file)
+
+      IO.puts(~s<Writing HTML file in #{dir} directory...>)
+      create_html(html_file)
+
+      File.stream!(py_path)
+      |> Enum.each(&highlight_line(&1, html_file))
+
+      File.write(html_file, "</code></pre>\n\t</body>\n</html>", [:append])
+    rescue
+      exception ->
+        IO.puts("Process Failed. Reason: #{inspect(exception)}")
+    end
+  end
+```
+
+As we can see, the function highlight firstly initialize the variables and expand the paths. These lines have a complexity of $O(1)$ as it is a constant time. The function File.mkdir has also a constant complexity. 
+
+The next two functions 'create_css' and 'create_html' have a complexity of $O(1)$, since these functions create static files that we have hard coded with HTML tags and CSS styles and thus they will always take the same time to execute. 
+
+Let us define the number of lines in the file as $n$ and the maximum number of characters in a line as $m$ (as used previously). Then, the `File.stream!` function which will read line by line the text file provided, as send the characters read to the `highlight_line/2` function. Reading the characters takes linear time $O(m)$ and as we just showed `highlight_line/2` has the same complexity, thus for each line we are reading through the stream we are taking time linear in $m$. There are $n$ of this lines by our definition and therefore the overall time complexity of piping the results of the stream is $O(nm)$. Finally we write some static data to the HTML file again, taking constant time and the process ends. This means that the overall time compelxity is $O(nm)$.
 
 ## Reflection
 
 Coding is always going to be a tool that can be used for the benefit of the society or for the opposite. As any sort of knowledge, it can be used for good or for bad and it is important to always have an ethical view of the situation of what our code can be used for.
 
-In our case, we have created a syntax highlighter for Python. which as itself it may not be a very useful tool in the version that it is right now. The interesting part of this project is that we have decided to make it open source. This means that anyone can use it and modify it for their own benefit, but also learn from it. this is why we think that humanity caan always evolve for better as long a society is willing to learn, share their knowledge and also help those who need help. 
+In our case, we have created a syntax highlighter for Python. This program by itself may not be a very useful tool in the version that it is right now, we are aware that there are way more powerful lexers out there; but the interesting part of this project is that we have decided to make it open source by making a public repository in GitHub. This means that anyone can use it and modify it for their own benefit, but we have also taken the time to document it correctly so that people can learn from it, the time complexity section on this file could also be helpful for some. This is why we think that humanity caan always evolve for better as long a society is willing to learn, share their knowledge and also help those who need help. From an ethical point of view we believe that making knowledge accesible is not only correct but also necessary for the development of our society and we are glad to contribute to this cause.
