@@ -155,7 +155,7 @@ Color code: #b6b6b6;
 
 ## Regular Expressions:
 
-``` 
+```{elixir} 
     spaces = ~r<^(\s+)>
 
     keywords = ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|try|while|with|yield)\b>
@@ -192,7 +192,7 @@ The next step was to analyze each line of the document. Once this final step was
 
 First let's find the time complexities of some helper functions that we will use in the `Lexer` module. 
 
-```
+```{elixir}
 defp find_token(line) do
     [{:space, ~r<^(\s+)>},
      {:keyword, ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|self|try|while|with|yield)\b>},
@@ -214,7 +214,7 @@ defp find_token(line) do
 ```
 Let $k$ be the length of the longest regular expression match. We can see here that we are trying to match the line provided with each regular expression. Since there is a constant number of regular expressions the complexity of the `Enum.find/2` procedure will be $O(k)$, moreover since we are looking for matches at the beginning of the string most of them will terminate early. Finally, if we are able to match we split the line using the regular expression, which has a complexity of $O(k)$, and return the result. If we are not able to match we return an error. Thus the overall complexity of this function is $O(k)$, since the split only occurs after we finished finding the match. We can see what's the longest match, and it is the comment expression; which has a complexity of $O(m)$, where $m$ is the length of the line. Since it has to go through all the characters in the line, thus this will be the complexity of the `find_token/1` function.
 
-``` 
+```{elixir} 
 defp highlight_line(line, fileIn) do
     case find_token(line) do
       {:ok, [content | [rest | _list]], type} -> 
@@ -232,7 +232,7 @@ defp highlight_line(line, fileIn) do
 Now looking at the `highlight_line/2` function we can see that we call the `find_token/1` procedure on the line and try to match its results to different patters. Checking patterns takes constant time, and the `find_token/1` function has a complexity of $O(m)$, but what about the `recursive_write/4` function? Let us derive its complexity.
 
 
-```
+```{elixir}
 defp recursive_write(fileIn, content, type, rest) do
     if type == :space,
       do: File.write(fileIn, content, [:append]),
@@ -244,14 +244,14 @@ defp recursive_write(fileIn, content, type, rest) do
 ```
 Recursive write is a simple function that will write the content to the file if the type is a space, otherwise it will write the content with the corresponding HTML tag. However, it will also call the `highlight_line/2` function with the rest of the line. Writing to the file will be as expensive as the amount of characters to write, therefore it will have a complexity of $O(k)$ since that was the longest match. The new call to `highlight_line/2` will have a smaller list and thus the longest expression that could match will be smaller let us call this value $k_{1} < k$. This calls will continue until the line is empty, creating a decreasing sequence $\langle k, k_{1}, k_{2}, \dots, 0 \rangle$. Notice that in the worst scenario it will read the whole line, but then the function would terminate immediately with an $O(m)$ complexity. But now let us consider the case where the recursive calls always divides the size of the input by some value $b \leq m$, then if $T(m)$ is the complexity of this function, we can write the following recurence relation:
 $$T(m) = T\left(\frac{m}{b}\right) + O(m)$$
-Since it will call itself again with a smaller complexity. The function that is added in the end is due to the fact that it will have a complexity of at most $m$ in each call when writing the contents (which in more general cases is a merging procedure). In fact this is a divide and conquer algorithm since each regular expression match divides the string in 2 parts, one will be written taking $O(m)$ time (the big oh notation hides the fact that the time taken is proportional to $m - \frac{m}{b}$ since it writes whatever was divided), the other part will be used recursively. Intuitively we can see that we are just making constant computational efforts of writing the content and then dividing the string by that content, which in the end leads to writing the whole string ($O(m)$).
+Since it will call itself again with a smaller complexity. The function that is added in the end is due to the fact that it will have a complexity of at most $m$ in each call when writing the contents (which in more general cases is a merging procedure). In fact this is a divide and conquer algorithm since each regular expression match divides the string in 2 parts, one will be written taking $O(m)$ time (the big oh notation hides the fact that the time taken is proportional to $m - \frac{m}{b}$ since it writes whatever was divided), the other part will be used recursively. Intuitively we can see that we are just making constant computational efforts of writing the content and then dividing the string by that content, which in the end leads to writing the whole string: $O(m)$.
 
 But then using the Master Theorem (found in Cormen's Introduction to Algorithms), we can see that the complexity of this function will be $O(m)$. This follows from the fact that any recurrence of the form $T(n)=aT(n/b)+f(n),$ with
 $f(n)=\Omega(n^{\log_{b}a+\epsilon})$ for some constat $\epsilon > 0$ and for which $af(n/b)\leq cf(n)$ with some constant $c<1$ and all sufficiently large $n$, will have a complexity $T(n)=\Theta(f(n))$ (Theorem 4.1. Introduction to Algorithms). We know that this is the case since we can deduce the coefficients. In this case $a=1$, thus $n^{\log_{b}a+\epsilon} = n^{\log_{b}^{1 + \epsilon}}$, gives the same complexity as the function $f$. Finally we can simply choose $b=c$ to solve the inequality. 
 
 Looking at the main and public function `highlight/2`, once we derived the time complexity of the `highlight_line/2` function we can finally show that the overall time complexity is $O(nm)$, why is this the case?
 
-```
+```{elixir}
  def highlight(fileIn, dir) do
     py_path = Path.expand(fileIn)
     css_file = ~s(#{Path.dirname(fileIn)}/#{dir}/style.css)
