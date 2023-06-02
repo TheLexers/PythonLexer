@@ -155,7 +155,7 @@ Color code: #b6b6b6;
 
 ## Regular Expressions:
 
-```{elixir} 
+```elixir 
     spaces = ~r<^(\s+)>
 
     keywords = ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|try|while|with|yield)\b>
@@ -192,7 +192,7 @@ The next step was to analyze each line of the document. Once this final step was
 
 First let's find the time complexities of some helper functions that we will use in the `Lexer` module. 
 
-```{elixir}
+```elixir
 defp find_token(line) do
     [{:space, ~r<^(\s+)>},
      {:keyword, ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|self|try|while|with|yield)\b>},
@@ -214,7 +214,7 @@ defp find_token(line) do
 ```
 Let $k$ be the length of the longest regular expression match. We can see here that we are trying to match the line provided with each regular expression. Since there is a constant number of regular expressions the complexity of the `Enum.find/2` procedure will be $O(k)$, moreover since we are looking for matches at the beginning of the string most of them will terminate early. Finally, if we are able to match we split the line using the regular expression, which has a complexity of $O(k)$, and return the result. If we are not able to match we return an error. Thus the overall complexity of this function is $O(k)$, since the split only occurs after we finished finding the match. We can see what's the longest match, and it is the comment expression; which has a complexity of $O(m)$, where $m$ is the length of the line. Since it has to go through all the characters in the line, thus this will be the complexity of the `find_token/1` function.
 
-```{elixir} 
+```elixir 
 defp highlight_line(line, fileIn) do
     case find_token(line) do
       {:ok, [content | [rest | _list]], type} -> 
@@ -232,7 +232,7 @@ defp highlight_line(line, fileIn) do
 Now looking at the `highlight_line/2` function we can see that we call the `find_token/1` procedure on the line and try to match its results to different patters. Checking patterns takes constant time, and the `find_token/1` function has a complexity of $O(m)$, but what about the `recursive_write/4` function? Let us derive its complexity.
 
 
-```{elixir}
+```elixir
 defp recursive_write(fileIn, content, type, rest) do
     if type == :space,
       do: File.write(fileIn, content, [:append]),
@@ -251,7 +251,7 @@ $f(n)=\Omega(n^{\log_{b}a+\epsilon})$ for some constat $\epsilon > 0$ and for wh
 
 Looking at the main and public function `highlight/2`, once we derived the time complexity of the `highlight_line/2` function we can finally show that the overall time complexity is $O(nm)$, why is this the case?
 
-```{elixir}
+```elixir
  def highlight(fileIn, dir) do
     py_path = Path.expand(fileIn)
     css_file = ~s(#{Path.dirname(fileIn)}/#{dir}/style.css)
