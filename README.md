@@ -38,6 +38,15 @@ iex> Lexer.highlight("path/to/file.py")
 ```
 Some examples of code already passed through this function can be found on the `/lexer/examples` directory.
 
+### Note
+
+You might also need to install some dependencies in order to run the project. If this is the case you can use the following command in the `lexer` directory:
+
+```
+mix deps.get
+```
+The only dependency is ExDoc, which is used to generate the documentation that is shown in the GitHub Pages.
+
 ---
 
 <!-- <style>
