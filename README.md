@@ -330,31 +330,58 @@ Parallel programming is of enormous importance in today's computing context as i
     end
 
 ```
+### Usage
+
+To use this function you will need to run the following command in the `iex` terminal, first execute in the root of the mix project (`PythonLexer/lexer`):
+
+```
+iex -S mix
+```
+Then you can run the following command to highlight the files in the `PythonLexer/lexer/examples/parallel` directory:
+
+```
+iex> Lexer.highlight_parallel("./examples/parallel")
+```
+This will create a html for each python file in the directory and a css file with the styles. The files will be created in the same directory and will have the same name but with different extensions.
+
+There is also a function that does the same (highlight the contents of all the files in a directory) but it does it sequentially. This function is `highlight_sequential/1` and it can be used in the same way as the parallel function. The only difference is that it will use a single thread.
 
 ## Parallel complexity
 
-`highlight_parallel` has the same complexity as its predecessor sequential function. It takes linear time complexity in $m$, which is every line that the function reads, and also linear time complexity in $n$, which is the ammount of characters. As it is a parallel function, we can describe the overall complexity of the program as the longest file that the function is going to read. This means that the overall time compelxity can be considered as $O(nm)$.
+If we consider the case were $k$ files are being highlighted sequentially, then the time complexity of the function is $O(knm)$, where $n$ is the number of lines in the biggest files and $m$ is the number of characters. This follows from the previous demonstration of the complexity of the `highlight/2` function, which takes $O(nm)$ time and therefore when trying to read multiple files the complexity will be the same as the longest file.
 
-## Benchmarks
+Interestingly, `highlight_parallel` has the same asymptotic time complexity as the sequential function. Since the number of threads that can be executed simultaneously is fixed by the system being used, and constants are dropped in big oh notation. 
 
-A benchmark function was created in order to compare the performance of the sequential and parallel functions. The results can be found in the dollowinf table:
+However, the fact that the asymptotic time complexity is the same doesn't mean that the execution times will be equal. For instance if we try to highlight 8 files in a computer with 8 cores, the difference in the execution times of the sequential and parallel implementations should differ and depending on the size of the files the change in that time might become very significant.
 
-| benchmark num | Sequential time (s) | Parallel time (s) |
-|:---------:|:-------------------:|:-----------------:|
-| 1.      | 7.927765              | 5.490092            |
-| 2.      | 7.537254              | 5.775834            |
-| 3.      | 7.880397              | 5.608249            |
-| 4.      | 7.612272              | 5.791548            |
-| 5.      | 7.606539              | 5.756286            |
-| 6.      | 7.496936              | 5.824183            |
-| 7.      | 7.475266              | 5.91838            |
-| 8.      | 7.704623              | 6.032369            |
-| 9.      | 7.720456              | 5.48416            |
-| 10.     | 7.929119              | 5.769395            |
+On the other hand if the files are sufficiently small it may be slower for the parallel function to execute. This is because the time it takes to create a new process and all the operations managed by the system to run the process may be greater than the time it takes to highlight the file. In this case the sequential function would be faster. However notice that this only occurs with "small" files, and therefore the time to execute is expected to be small.
 
-The speedup, which is the ratio of the sequential time to the parallel time, which was calculated with the following formula: $ speedup = \frac{1}{(1-p)+(p/n)} $, showed a result of: $1.338380490222399 $. This means that the parallel function is around 1.33 times faster than the sequential function. or in other words, the parallel function is 33% faster than the sequential function.
+## Benchmarking the Performance
 
-It is also important to mention that, as both functions recieve more and larger files, the speedup will increase and the overall performance of the parallel function will be better and noticeable. 
+A benchmark function was created in order to compare the performance of the sequential and parallel functions. The results can be found in the following table or in the `img` folder of this repository.
+
+| Run       | Sequential time (s) | Parallel time (s)   |
+|:---------:|:-------------------:|:-------------------:|
+| 1.        | 7.927765            | 5.490092            |
+| 2.        | 7.537254            | 5.775834            |
+| 3.        | 7.880397            | 5.608249            |
+| 4.        | 7.612272            | 5.791548            |
+| 5.        | 7.606539            | 5.756286            |
+| 6.        | 7.496936            | 5.824183            |
+| 7.        | 7.475266            | 5.91838             |
+| 8.        | 7.704623            | 6.032369            |
+| 9.        | 7.720456            | 5.48416             |
+| 10.       | 7.929119            | 5.769395            |
+
+The speedup, $S$, which is the ratio of the sequential time to the parallel time, was calculated with the following formula: $ S = \frac{\sum_{i=0}^{N} T_{s_i}}{\sum_{i=0}^{N} T_{p_i}} $, where $T_{s_{i}}$ is the execution time of the sequential algorithm in the $i^{\mathrm{th}}$ iteration and $T_{p_i}$ is the time of the parallel algorithm in the $i^{\mathrm{th}}$ iteration. This is equivalent to dividing the average execution times of the sequential and parallel algorithms. 
+
+As shown by the table we used 10 iterations, and we also benchmarked the implementations with a computer that has 8 cores. This resulted in a speed of: $1.338380490222399 $, which means that the parallel function is around 1.33 times faster than the sequential function, or in other words, the parallel function is 33% faster than the sequential function. The speedup is not as high as we expected, but this is probably due to the fact that the files used for the benchmarking were relatively small and the overhead of creating a new process and managing the threads was big enough to make the functions have similar running times.
+
+It is also important to mention that, as both functions recieve more and larger files, the speedup will increase and the overall performance of the parallel function will be better and noticeable. As a matter of fact one of the files was particularly heavy: `examples/parallel/03_large-file.py` and it took 4.75 seconds alone; which is about 80% of the execution time in the parallel function.See the image below, second execution `iex(2)>`
+
+![Benchmark](./img/benchmark.png)
+
+This shows that the other 7 files added about 3 seconds to the sequential function and therefore there running times are small enough for the parallel function to just wait for this single file to finish.
 
 
 ## Reflection
@@ -362,3 +389,9 @@ It is also important to mention that, as both functions recieve more and larger 
 Coding is always going to be a tool that can be used for the benefit of the society or for the opposite. As any sort of knowledge, it can be used for good or for bad and it is important to always have an ethical view of the situation of what our code can be used for.
 
 In our case, we have created a syntax highlighter for Python. This program by itself may not be a very useful tool in the version that it is right now, we are aware that there are way more powerful lexers out there; but the interesting part of this project is that we have decided to make it open source by making a public repository in GitHub. This means that anyone can use it and modify it for their own benefit, but we have also taken the time to document it correctly so that people can learn from it, the time complexity section on this file could also be helpful for some. This is why we think that humanity caan always evolve for better as long a society is willing to learn, share their knowledge and also help those who need help. From an ethical point of view we believe that making knowledge accesible is not only correct but also necessary for the development of our society and we are glad to contribute to this cause.
+
+### Concurrency
+
+As it becomes harder to improve computer hardware, the need for better software becomes more important. This is why concurrency is a very important topic in computer science. It allows us to run different parts of an algorithm separately and when this processes are slow enough the results can be very significant. This is why we decided to implement a parallel version of our lexer.
+
+Concurrency has a lot of difficulties, but using the functional paradigm allows us to have a better control over the state of the program thanks to immutability. Moreover, Elixir makes the use of the Erlang Virtual Machine (BEAM) more accessible which is a very powerful piece of technology as it allows for processes to be very cheap.
