@@ -288,6 +288,75 @@ The next two functions 'create_css' and 'create_html' have a complexity of $O(1)
 
 Let us define the number of lines in the file as $n$ and the maximum number of characters in a line as $m$ (as used previously). Then, the `File.stream!` function which will read line by line the text file provided, as send the characters read to the `highlight_line/2` function. Reading the characters takes linear time $O(m)$ and as we just showed `highlight_line/2` has the same complexity, thus for each line we are reading through the stream we are taking time linear in $m$. There are $n$ of this lines by our definition and therefore the overall time complexity of piping the results of the stream is $O(nm)$. Finally we write some static data to the HTML file again, taking constant time and the process ends. This means that the overall time compelxity is $O(nm)$.
 
+## Parallel programming and concurrency
+
+Parallel programming is of enormous importance in today's computing context as it enables the efficient utilization of multiple processors or cores to tackle complex tasks concurrently, hence significantly enhancing the speed and performance the code. By dividing a program into smaller, independent tasks that can be executed simultaneously, parallel programming makes a program considerably faster and more optimized. Because of this, we decided to implement a parallel version of our lexer, which we will call `highlight_parallel`. This function will take the same arguments as the `highlight` function, but it will use the `Task.async` module to run the `do_highlight_parallel` function in parallel as showed in the following code:
+
+```elixir
+ @spec highlight_parallel(dir()) :: :ok | :error 
+  def highlight_parallel(dir \\ ".") do
+    try do
+      # Find python files and highlight syntax in parallel
+      File.ls(dir)
+      |> case do
+        {:ok, files} -> files
+        {:error, _reason} -> raise "Failed to read directory"
+      end
+      |> Enum.filter(&Regex.match?(~r|.py$|, &1))
+      |> Enum.map(&Task.async(fn -> do_highlight_parallel(&1, dir) end))
+      |> Enum.map(&Task.await(&1, :infinity))
+
+      # Write CSS once
+      css_file = ~s(#{dir}/style.css)
+      create_css(css_file)
+      |> case do
+        :ok -> :ok
+        true -> raise "Failed to create css file"
+      end
+    
+    rescue
+      exception ->
+        IO.puts("Error: #{inspect(exception)}")
+    end
+  end
+
+  defp do_highlight_parallel(fileIn, dir) do
+    file = ~s|#{dir}/#{fileIn}|
+    html_file = Regex.replace(~r|.py$|, file, ".html")
+    create_html(html_file)
+    |> case do
+      :ok -> :ok
+      {:error, _reason} -> raise "Failed to create html file"
+    end
+
+```
+
+## Parallel complexity
+
+`highlight_parallel` has the same complexity as its predecessor sequential function. It takes linear time complexity in $m$, which is every line that the function reads, and also linear time complexity in $n$, which is the ammount of characters. As it is a parallel function, we can describe the overall complexity of the program as the longest file that the function is going to read. This means that the overall time compelxity can be considered as $O(nm)$.
+
+## Benchmarks
+
+A benchmark function was created in order to compare the performance of the sequential and parallel functions. The results can be found in the dollowinf table:
+
+| benchmark num | Sequential time (s) | Parallel time (s) |
+|:---------:|:-------------------:|:-----------------:|
+| 1.      | 7.927765              | 5.490092            |
+| 2.      | 7.537254              | 5.775834            |
+| 3.      | 7.880397              | 5.608249            |
+| 4.      | 7.612272              | 5.791548            |
+| 5.      | 7.606539              | 5.756286            |
+| 6.      | 7.496936              | 5.824183            |
+| 7.      | 7.475266              | 5.91838            |
+| 8.      | 7.704623              | 6.032369            |
+| 9.      | 7.720456              | 5.48416            |
+| 10.     | 7.929119              | 5.769395            |
+
+The speedup, which is the ratio of the sequential time to the parallel time, which was calculated with the following formula: $ speedup = \frac{1}{(1-p)+(p/n)} $, showed a result of: $1.338380490222399 $. This means that the parallel function is around 1.33 times faster than the sequential function. or in other words, the parallel function is 33% faster than the sequential function.
+
+It is also important to mention that, as both functions recieve more and larger files, the speedup will increase and the overall performance of the parallel function will be better and noticeable. 
+
+
 ## Reflection
 
 Coding is always going to be a tool that can be used for the benefit of the society or for the opposite. As any sort of knowledge, it can be used for good or for bad and it is important to always have an ethical view of the situation of what our code can be used for.
