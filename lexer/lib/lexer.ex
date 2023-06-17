@@ -12,23 +12,17 @@ defmodule Lexer do
   @type dir() :: String.t()
 
   @doc """
-  Highlights the syntax of a python file given by the user `fileIn`
-  by creating a HTML and CSS file inside a directory called 
-  `highlighted` which will be located in the same place as the file.
-  """
-  @spec highlight(fileIn()) :: :ok | :error
-  def highlight(fileIn), 
-    do: highlight(fileIn, "highlighted")
-
-  @doc """
   Creates a HTML and CSS file inside the directory `dir`
   that highlights the contents of the input file
   `fileIn` using the syntax of Python code.
 
+  If no directory is given it will use "highlighted" as
+  the name of the directory
+
   The directory will be created where the file is located.
   """
   @spec highlight(fileIn(), dir()) :: :ok | :error
-  def highlight(fileIn, dir) do
+  def highlight(fileIn, dir \\ "highlighted") do
     py_path = Path.expand(fileIn)
     css_file = ~s(#{Path.dirname(fileIn)}/#{dir}/style.css)
     html_file = ~s(#{Path.dirname(fileIn)}/#{dir}/index.html)
@@ -57,10 +51,137 @@ defmodule Lexer do
     end
   end
 
+  @doc """
+  Finds all python files in the given directory, creates a thread for each one
+  and highlights the syntax of their contents in their respective thread.
+
+  Finally, it creates a CSS file to color the tokens.
+  """
+  @spec highlight_parallel(dir()) :: :ok | :error 
+  def highlight_parallel(dir \\ ".") do
+    try do
+      # Find python files and highlight syntax in parallel
+      File.ls(dir)
+      |> case do
+        {:ok, files} -> files
+        {:error, _reason} -> raise "Failed to read directory"
+      end
+      |> Enum.filter(&Regex.match?(~r|.py$|, &1))
+      |> Enum.map(&Task.async(fn -> do_highlight_parallel(&1, dir) end))
+      |> Enum.map(&Task.await(&1, :infinity))
+
+      # Write CSS once
+      css_file = ~s(#{dir}/style.css)
+      create_css(css_file)
+      |> case do
+        :ok -> :ok
+        true -> raise "Failed to create css file"
+      end
+    
+    rescue
+      exception ->
+        IO.puts("Error: #{inspect(exception)}")
+    end
+  end
+
+  defp do_highlight_parallel(fileIn, dir) do
+    file = ~s|#{dir}/#{fileIn}|
+    html_file = Regex.replace(~r|.py$|, file, ".html")
+    create_html(html_file)
+    |> case do
+      :ok -> :ok
+      {:error, _reason} -> raise "Failed to create html file"
+    end
+
+    File.stream!(file)
+    |> Enum.each(&highlight_line(&1, html_file))
+
+    File.write(html_file, "</code></pre>\n\t</body>\n</html>", [:append])
+  end
+
+  @doc """
+  Finds all python files in the given directory and highlights the syntax of their 
+  contents sequentially
+
+  Finally, it creates a CSS file to color the tokens.
+  """
+  def highlight_sequential(dir) do
+    try do
+        # Find python files and highlight syntax sequentially
+        File.ls(dir)
+        |> case do
+          {:ok, files} -> files
+          {:error, _reason} -> raise "Failed to read directory"
+        end
+        |> Enum.filter(&Regex.match?(~r|.py$|, &1))
+        |> Enum.each(&do_highlight_sequential(&1, dir))
+        
+        # Write CSS once
+        css_file = ~s(#{dir}/style.css)
+        create_css(css_file)
+        |> case do
+          :ok -> :ok
+          true -> raise "Failed to create css file"
+        end
+      
+      rescue
+        exception ->
+          IO.puts("Error: #{inspect(exception)}")
+    end
+  end
+
+  defp do_highlight_sequential(fileIn, dir) do
+    file = ~s|#{dir}/#{fileIn}|
+    html_file = Regex.replace(~r|.py$|, file, ".html")
+    create_html(html_file)
+    |> case do
+      :ok -> :ok
+      {:error, _reason} -> raise "Failed to create html file"
+    end
+
+    File.stream!(file)
+    |> Enum.each(&highlight_line(&1, html_file))
+
+    File.write(html_file, "</code></pre>\n\t</body>\n</html>", [:append])
+  end
+
+  @doc """
+  Uses the given directory to run both the sequential and parallel highlighting 
+  functions in `iters` iterations.
+
+  Each execution time is written in the standard output and the accumulated
+  times are saved as state and then used to find the average performance and
+  speedup 
+  """
+  def benchmark(dir \\ "examples/parallel", iters \\ 10) do
+    IO.puts("|\tSequential\t|\tParallel\t|")
+    {acc_1, acc_p} = do_benchmark(dir, {0, 0}, iters)
+    {acc_1 / iters, acc_p / iters, acc_1 / acc_p} 
+  end
+
+  # Utility function to time sequential and parallel executions
+  defp do_benchmark(_dir, acc, 0), 
+    do: acc
+
+  defp do_benchmark(dir, {acc_1, acc_p}, iters) do
+    t1 = :timer.tc(fn -> Lexer.highlight_sequential(dir) end) 
+      |> elem(0)
+      |> Kernel./(1_000_000)
+
+    tp = :timer.tc(fn -> Lexer.highlight_parallel(dir) end) 
+      |> elem(0)
+      |> Kernel./(1_000_000)
+    
+    IO.puts(~s(|\t#{t1} \t|\t#{tp} \t|))
+
+    do_benchmark(dir, {acc_1 + t1, acc_p + tp}, iters - 1)
+  end
+
   defp find_token(line) do
     [{:space, ~r<^(\s+)>},
      {:keyword, ~r<^(as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|lambda|None|pass|raise|return|self|try|while|with|yield)\b>},
-     {:string, ~r<^("[^"]*"|'[^']*')>},
+     {:string, ~r<^"(\\"|[^"])*">},
+     {:string, ~r<^'(\\'|[^'])*'>},
      {:comment, ~r<^(#.*)>},
      {:number, ~r<^([+-]?\d+(\.\d+)?(e[+-]?\d+)?([+-]\d+(\.\d+)?(e[+-]?\d+)?j)?)>},
      {:bool, ~r<^(True|False)\b>},
@@ -89,9 +210,18 @@ defmodule Lexer do
   end
 
   defp recursive_write(fileIn, content, type, rest) do
+    # Sanitize content for HTML
+    safe_content = if Regex.match?(~r|<[^<>]*>|, content) do
+      content 
+      |> String.replace(~r|(<)|, "&lt;")
+      |> String.replace(~r|(>)|, "&gt;")
+    else
+      content
+    end
+    Regex.split(~r|<[^<>]*>|, content, include_captures: true)
     if type == :space,
       do: File.write(fileIn, content, [:append]),
-      else: File.write(fileIn, ~s(<span class="#{type}">#{content}</span>), [:append])
+      else: File.write(fileIn, ~s(<span class="#{type}">#{safe_content}</span>), [:append])
 
     highlight_line(rest, fileIn)
   end
@@ -111,6 +241,8 @@ defmodule Lexer do
      "\t<body>\n",
      "\t\t<pre><code>"]
      |> Enum.each(&File.write(fileIn, &1, [:append]))
+
+    :ok
   end
     
   defp create_css(fileIn) do
@@ -129,5 +261,8 @@ defmodule Lexer do
       ".identifier {color: #82aaff; }",
       ".invalid {color: #ffd5c4; text-decoration:#f00 wavy underline;}"]
       |> Enum.each(&File.write(fileIn, &1, [:append]))
+    
+    :ok
   end
+
 end
