@@ -1,5 +1,4 @@
 # PythonLexer
-## Situacion problema: Resaltador de sintaxis
 
 ## Authors
 
